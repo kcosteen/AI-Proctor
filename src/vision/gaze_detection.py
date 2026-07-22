@@ -12,15 +12,7 @@ face_mesh = mp_face_mesh.FaceMesh(
 )
 
 
-camera = cv2.VideoCapture(0)
-
-
-while True:
-
-    ret, frame = camera.read()
-
-    if not ret:
-        break
+def detect_gaze(frame):
 
     # Get frame size
     h, w, _ = frame.shape
@@ -35,22 +27,21 @@ while True:
     )
 
     # Process face landmarks
-    results = face_mesh.process(rgb_frame)
+    gaze_results = face_mesh.process(rgb_frame)
 
+    gaze = None
 
-    if results.multi_face_landmarks:
+    if gaze_results.multi_face_landmarks:
 
-        face_landmarks = results.multi_face_landmarks[0]
+        face_landmarks = gaze_results.multi_face_landmarks[0]
 
         landmarks = face_landmarks.landmark
-
 
         gaze = estimate_gaze(
             landmarks,
             w,
             h
         )
-
 
         cv2.putText(
             frame,
@@ -62,17 +53,4 @@ while True:
             2
         )
 
-
-    cv2.imshow(
-        "Gaze Detection",
-        frame
-    )
-
-
-    if cv2.waitKey(1) & 0xFF == ord("q"):
-        break
-
-
-
-camera.release()
-cv2.destroyAllWindows()
+    return gaze_results, gaze

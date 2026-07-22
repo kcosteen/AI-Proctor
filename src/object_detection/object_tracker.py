@@ -1,10 +1,7 @@
-import cv2
 from ultralytics import YOLO
 import csv
 from datetime import datetime
 import os
-import time
-
 
 log_file = "logs/detections.csv"
 
@@ -32,102 +29,45 @@ suspicious_objects = [
 ]
 
 
-cap = cv2.VideoCapture(0)
+def detect_objects(frame):
 
-prev_time = time.time()
+    yolo_results = model(
+        frame,
+        classes=[
+            0,
+            63,
+            67,
+            73
+        ]
+    )
 
-while True:
+    detected_objects = []
 
-    ret, frame = cap.read()
+    for box in yolo_results[0].boxes:
 
-    if not ret:
-        break
-
-
-    results = model(
-    frame,
-    classes=[
-        0,   # person
-        63,  # laptop
-        67,  # cell phone
-        73   # book
-    ]
-)
-
-
-    # Go through every detected object
-    for box in results[0].boxes:
-
-        # Get class ID
         class_id = int(box.cls[0])
 
-
-        # Convert ID to name
         object_name = model.names[class_id]
 
-
-        # Confidence score
         confidence = float(box.conf[0])
-
 
         if confidence > 0.6:
 
-            print(
-                object_name,
-                round(confidence, 2)
-            )
-
+            detected_objects.append({
+                "label": object_name,
+                "confidence": confidence
+            })
 
             if object_name in suspicious_objects:
-
-                print(
-                    "⚠️ WARNING:",
-                    object_name,
-                    "detected!"
-                )
-
 
                 with open(log_file, "a", newline="") as file:
 
                     writer = csv.writer(file)
 
-                    writer.writerow(
-                        [
-                            datetime.now(),
-                            object_name,
-                            round(confidence, 2)
-                        ]
-                    )
-    current_time = time.time()
+                    writer.writerow([
+                        datetime.now(),
+                        object_name,
+                        round(confidence, 2)
+                    ])
 
-    fps = 1 / (current_time - prev_time)
-
-    prev_time = current_time
-
-    # Display
-    annotated = results[0].plot()
-
-    cv2.putText(
-        annotated,
-        f"FPS: {int(fps)}",
-        (20,40),
-        cv2.FONT_HERSHEY_SIMPLEX,
-        1,
-        (0,255,0),
-        2
-    )
-
-    
-
-    cv2.imshow(
-        "AI Proctor Object Detection",
-        annotated
-    )
-
-
-    if cv2.waitKey(1) & 0xFF == ord("q"):
-        break
-
-
-cap.release()
-cv2.destroyAllWindows()
+    return yolo_results, detected_objects

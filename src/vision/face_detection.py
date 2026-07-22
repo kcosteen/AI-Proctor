@@ -11,30 +11,20 @@ face_detection = mp_face_detection.FaceDetection(
 # Drawing utility
 mp_drawing = mp.solutions.drawing_utils
 
-# Open webcam
-camera = cv2.VideoCapture(0)
-
-while True:
-    ret, frame = camera.read()
-
-    if not ret:
-        break
+def detect_faces(frame):
 
     # Convert BGR to RGB
     rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
     # Detect faces
-    results = face_detection.process(rgb_frame)
+    face_results = face_detection.process(rgb_frame)
 
-    # Draw detections
-    if results.detections:
-        for detection in results.detections:
+    face_count = 0
+
+    if face_results.detections:
+        face_count = len(face_results.detections)
+
+        for detection in face_results.detections:
             mp_drawing.draw_detection(frame, detection)
 
-    cv2.imshow("Face Detection", frame)
-
-    if cv2.waitKey(1) == ord("q"):
-        break
-
-camera.release()
-cv2.destroyAllWindows()
+    return face_results, face_count
